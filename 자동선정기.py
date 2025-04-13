@@ -1,9 +1,14 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import io
+import re
 
-# 연령 조건 함수
+def extract_age(value):
+    match = re.search(r'(\d+)세', str(value))
+    return int(match.group(1)) if match else None
+
 def is_eligible(acode, age):
     유아코드 = ['A01', 'A02', 'A26']
     저학년코드 = ['A03', 'A04', 'A05', 'A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12', 'A13', 'A14',
@@ -11,7 +16,6 @@ def is_eligible(acode, age):
     고학년코드 = ['A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12', 'A13', 'A14',
                  'A15', 'A16', 'A17', 'A18', 'A19', 'A20', 'A21', 'A22', 'A23', 'A24', 'A25',
                  'A29', 'A30', 'A31', 'A32', 'A33', 'A34', 'A35']
-    
     if acode in 유아코드:
         return age in [6, 7]
     elif acode in 저학년코드:
@@ -21,14 +25,9 @@ def is_eligible(acode, age):
     else:
         return False
 
-def extract_age(value):
-    import re
-    match = re.search(r'(\d+)세', str(value))
-    return int(match.group(1)) if match else None
-
 st.title("🎲 교육 프로그램 무작위 선정기")
 
-uploaded_file = st.file_uploader("엑셀 파일을 업로드해주세요 (.xlsx)", type=["xlsx"])
+uploaded_file = st.file_uploader("엑셀 신청자 명단을 업로드하세요 (.xlsx)", type=["xlsx"])
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
@@ -59,15 +58,14 @@ if uploaded_file:
         )
         df.loc[mask, '선정'] = '선정'
 
-    st.success("🎉 추첨이 완료되었습니다!")
+    st.success("🎉 무작위 선정이 완료되었습니다!")
     st.dataframe(df[['참가자', 'A코드', 'B코드', '나이', '선정']])
 
-    # 다운로드
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False)
     st.download_button(
-        label="📥 선정결과 엑셀 다운로드",
+        label="📥 엑셀로 다운로드",
         data=output.getvalue(),
         file_name="최종_선정결과_전체명단.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
